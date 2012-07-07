@@ -4,18 +4,20 @@
  */
 
 var q = require('q');
-var c = require('connect');
 
 function JSObjectAdapter(type, instanceFactory) {
 
-    //Object.defineProperty(this, "type", { value: type, enumerable: true });
-    this.type = type;
-    this.instanceFactory = instanceFactory;
+    Object.defineProperty(this, "type", { value: type, enumerable: true, enumerable: true, writable:false, configurable:false });
+    Object.defineProperty(this, "instanceFactory", { value: instanceFactory, enumerable: true, writable:false, configurable:false });
 
     function handleRequest(req, res, next) {
-        var memberName = this.getMemberName(req);
-        var memberInfo = this.getMemberInfo(memberName);
-        var methodArgs = this.getArguments(memberInfo, req);
+        var serviceInstance = instanceFactory();
+
+        var memberName = this.resolveMemberName(req, serviceInstance);
+        var member     = this.resolveMember(req, memberName);
+        var memberInfo = this.createMemberInfo(member, instance);
+        var methodArgs = this.resolveArguments(req, serviceInstance, memberInfo);
+
 
         var _v = memberInfo.invoke(methodArgs);
 
@@ -28,21 +30,28 @@ function JSObjectAdapter(type, instanceFactory) {
 };
 
 
+Object.defineProperty(JSObjectAdapter.prototype, "type", { value: undefined, configurable:true });
+Object.defineProperty(JSObjectAdapter.prototype, "instanceFactory", { value: undefined, configurable:true });
 
-JSObjectAdapter.prototype.getMemberName = function(req) {
-    return req.url.substring(1);
+JSObjectAdapter.prototype.resolveMemberName = function(request, serviceInstance) {
+    return request.url.substring(1);
 }
 
-JSObjectAdapter.prototype.getArguments = function(memberInfo, req) {
-    return [1,2,3]
+JSObjectAdapter.prototype.resolveMember = function(request, memberName) {
+    var prefixedMemberName = request.method + "_" + memberName;
+    if (prefixedMemberName in this.type.prototype) {
+        this.type.prototype[prefixedMemberName];
+    } else {
+        this.type.prototype[memberName];
+    };
 }
 
-JSObjectAdapter.prototype.getMemberInfo = function(memberName) {
+
+
+JSObjectAdapter.prototype.createMemberInfo = function(member, instance) {
     var self = this;
-    var member = this.type.prototype[memberName];
 
-    var  memberInfo = {};
-
+    memberInfo.resultType = member.resultType;
     memberInfo.invoke = function(args) {
         var instance = self.instanceFactory();
         var result = member.apply(instance, args);
@@ -66,6 +75,11 @@ JSObjectAdapter.prototype.getMemberInfo = function(memberName) {
     return memberInfo;
 }
 
+JSObjectAdapter.prototype.resolveArguments = function(request, serviceInstance, memberInfo) {
+    var argInfos = memberInfo.getArgumentInfos();
+    //argInfo: { name: "name", type: "type", binder: "function" }
+
+}
 
 
 //var z = new JSObjectAdapter('5','5');

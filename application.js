@@ -11,11 +11,11 @@ var service = require('./jsservice.js');
 console.dir(service);
 
 function ServiceClass() {
-
+    this.requestContext = null;
 }
 
 
-ServiceClass.prototype.myFunction = function(a,b,c) {
+ServiceClass.prototype.get_index = function(a,b,c) {
     var result = [];
     for(var i = 0; i < 1000; i++) {
         result.push({a:a, b:b, c:c});
@@ -23,7 +23,7 @@ ServiceClass.prototype.myFunction = function(a,b,c) {
     return result;
 };
 
-ServiceClass.prototype.myFunctionAsync = function(a,b,c) {
+ServiceClass.prototype.post_index = function(a,b,c) {
 
     var options = {
         host: 'index.hu',
@@ -32,11 +32,13 @@ ServiceClass.prototype.myFunctionAsync = function(a,b,c) {
 
     return function(success, error) {
         var req = require('http').request(options, function(res) {
-            success( JSON.stringify(res.headers) );
+            success( res.headers );
         });
         req.end();
     }
 };
+
+
 
 var instance = new ServiceClass();
 
@@ -50,5 +52,6 @@ console.dir(adapter);
 var app = require('connect')();
 app.use("/xxx", function(a, b) {b.end("A")});
 app.use("/x", adapter);
+
 app.listen(3000);
 console.log("started");
