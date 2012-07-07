@@ -57,6 +57,8 @@ JSObjectAdapter.prototype.getMemberInfo = function(memberName) {
 
         if (typeof result === 'function') {
             result(success, error);
+        } else {
+            return q.fcall(function() { return result });
         }
         return defer.promise;
     }

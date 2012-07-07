@@ -6,33 +6,45 @@
  * To change this template use File | Settings | File Templates.
  */
 
-var jsservice = require('./jsservice.js');
-console.dir(jsservice)
+var service = require('./jsservice.js');
 
-function serviceClass() {
+console.dir(service);
 
+function ServiceClass() {
+
+}
+
+
+ServiceClass.prototype.myFunction = function(a,b,c) {
+    var result = [];
+    for(var i = 0; i < 1000; i++) {
+        result.push({a:a, b:b, c:c});
+    };
+    return result;
 };
 
-serviceClass.prototype.myFunction = function(a,b,c) {
-    return a + b + c;
-};
+ServiceClass.prototype.myFunctionAsync = function(a,b,c) {
 
-serviceClass.prototype.myFunctionAsync = function(a,b,c) {
+    var options = {
+        host: 'index.hu',
+        port:80
+    };
 
-    return function(result, error) {
-        setTimeout( function() {
-            result(a + b + c);
-        }, 5000);
+    return function(success, error) {
+        var req = require('http').request(options, function(res) {
+            success( JSON.stringify(res.headers) );
+        });
+        req.end();
     }
 };
 
-var instance = new serviceClass();
+var instance = new ServiceClass();
 
 function instanceFactory() {
     return instance;
 }
 
-var adapter = jsservice.createAdapter(serviceClass,  instanceFactory);
+var adapter = service.createAdapter(ServiceClass,  instanceFactory);
 console.dir(adapter);
 
 var app = require('connect')();
