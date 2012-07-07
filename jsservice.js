@@ -3,20 +3,74 @@
  * Module dependencies.
  */
 
- var q = require('q');
+var q = require('q');
 var c = require('connect');
-var http = require('http');
-var deferred = q.defer();
-console.dir(deferred);
 
-var p = deferred.promise;
+function JSObjectAdapter(type, instanceFactory) {
 
-var app = c();
-app.use("/",function(req, res) { res.end('1')});
+    //Object.defineProperty(this, "type", { value: type, enumerable: true });
+    this.type = type;
+    this.instanceFactory = instanceFactory;
 
-var s = http.createServer(app).listen(3000);
-s.on('request', function() { console.log('request')});
-console.dir(s);
+    function handleRequest(req, res, next) {
+        var memberName = this.getMemberName(req);
+        var memberInfo = this.getMemberInfo(memberName);
+        var methodArgs = this.getArguments(memberInfo, req);
 
-q.when(p).then(function() { console.log("!")});
-setTimeout(function() { console.dir(app);}, 2000);
+        var _v = memberInfo.invoke(methodArgs);
+
+        q.when(_v).then(function (value) {
+           res.end(JSON.stringify(value));
+        });
+    };
+
+    this.handleRequest = handleRequest;
+};
+
+
+
+JSObjectAdapter.prototype.getMemberName = function(req) {
+    return req.url.substring(1);
+}
+
+JSObjectAdapter.prototype.getArguments = function(memberInfo, req) {
+    return [1,2,3]
+}
+
+JSObjectAdapter.prototype.getMemberInfo = function(memberName) {
+    var self = this;
+    var member = this.type.prototype[memberName];
+
+    var  memberInfo = {};
+
+    memberInfo.invoke = function(args) {
+        var instance = self.instanceFactory();
+        var result = member.apply(instance, args);
+        var defer = q.defer();
+
+        function success(r) {
+            defer.resolve(r);
+        };
+        function error(r) {
+            defer.reject(r);
+        };
+
+        if (typeof result === 'function') {
+            result(success, error);
+        }
+        return defer.promise;
+    }
+
+    return memberInfo;
+}
+
+
+
+//var z = new JSObjectAdapter('5','5');
+
+exports.createAdapter = function(type, instanceFactory) {
+    return function(req, res, next) {
+        var adapter = new JSObjectAdapter(type, instanceFactory);
+        adapter.handleRequest(req, res, next);
+    }
+}
