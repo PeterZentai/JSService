@@ -15,20 +15,22 @@ function ServiceClass() {
 }
 
 
-ServiceClass.prototype.get_index = function(a,b,c) {
-    var result = [];
-    for(var i = 0; i < 1000; i++) {
-        result.push({a:a, b:b, c:c});
-    };
-    return result;
-};
+//ServiceClass.prototype.get_index = function(a,b,c) {
+//    var result = [];
+//    for(var i = 0; i < 1000; i++) {
+//        result.push({a:a, b:b, c:c});
+//    };
+//    return result;
+//};
 
-ServiceClass.prototype.post_index = function(a,b,c) {
+ServiceClass.prototype.index = function(a,b,c) {
 
     var options = {
         host: 'index.hu',
         port:80
     };
+
+
 
     return function(success, error) {
         var req = require('http').request(options, function(res) {
@@ -38,7 +40,7 @@ ServiceClass.prototype.post_index = function(a,b,c) {
     }
 };
 
-
+ServiceClass.prototype.index.params = [{ name: "a"},{ name: "b"},{ name: "c"}];
 
 var instance = new ServiceClass();
 
@@ -48,8 +50,9 @@ function instanceFactory() {
 
 var adapter = service.createAdapter(ServiceClass,  instanceFactory);
 console.dir(adapter);
-
+var connect = require('connect');
 var app = require('connect')();
+app.use(connect.query());
 app.use("/xxx", function(a, b) {b.end("A")});
 app.use("/x", adapter);
 
